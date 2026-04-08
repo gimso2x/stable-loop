@@ -86,7 +86,10 @@ curl -sL https://raw.githubusercontent.com/gimso2x/stable-loop-harness/main/inst
 ```bash
 cd stable-loop-harness
 python3 -m pytest tests/hooks/ -v
+python3 -m unittest tests.install.test_install -v
 ```
+
+설치 검증은 빈 프로젝트에 `install.sh`를 실제로 실행한 뒤, 필수 파일 복사 여부와 설치된 훅의 기본 동작까지 확인한다.
 
 ## 라이선스
 
