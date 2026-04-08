@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 PreToolUse guard hook for Claude Code.
-Blocks destructive Bash commands and Write/Edit to protected paths.
+Blocks destructive Bash commands and file mutations to protected paths.
 
 Input (stdin): JSON with tool_name, tool_input
 Output (stderr): Reason for block
@@ -33,7 +33,7 @@ BASH_DENY_PATTERNS = [
 # Allow list: rm of a single specific file (not -rf, not wildcard, not directory)
 BASH_RM_ALLOW_PATTERN = r"rm\s+(?!-[rfRF])\S+$"  # rm without -r/-f flags
 
-# Protected path patterns (for Write/Edit tools)
+# Protected path patterns (for file mutation tools)
 PROTECTED_PATH_PATTERNS = [
     r"\.env",
     r"\.github/",
@@ -96,22 +96,12 @@ def main():
             )
             sys.exit(2)
 
-    # --- Write tool: check for protected paths ---
-    elif tool_name == "Write":
+    # --- File mutation tools: check for protected paths ---
+    elif tool_name in ("Write", "Edit", "MultiEdit"):
         file_path = tool_input.get("file_path", "")
         if is_protected_path(file_path):
             print(
-                f"[pretool_guard] BLOCKED: Write to protected path: {file_path}",
-                file=sys.stderr,
-            )
-            sys.exit(2)
-
-    # --- Edit tool: check for protected paths ---
-    elif tool_name == "Edit":
-        file_path = tool_input.get("file_path", "")
-        if is_protected_path(file_path):
-            print(
-                f"[pretool_guard] BLOCKED: Edit on protected path: {file_path}",
+                f"[pretool_guard] BLOCKED: {tool_name} on protected path: {file_path}",
                 file=sys.stderr,
             )
             sys.exit(2)

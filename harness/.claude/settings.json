@@ -56,6 +56,15 @@
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/pretool_guard.py\""
           }
         ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/pretool_guard.py\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -74,6 +83,19 @@
       },
       {
         "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/fix_scope_guard.py\""
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/posttool_log.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
         "hooks": [
           {
             "type": "command",

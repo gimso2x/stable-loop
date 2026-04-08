@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 PostToolUse scope guard for /fix command.
-Counts Write/Edit operations; warns when >3 files modified.
+Counts file mutation operations; warns when >3 files modified.
 
 Input (stdin): JSON with tool_name, tool_input, session_id
 Output (stderr): Warning when over limit
@@ -53,8 +53,8 @@ def main():
     tool_input = data.get("tool_input", {})
     session_id = data.get("session_id", "default")
 
-    # Only track Write and Edit tools
-    if tool_name not in ("Write", "Edit"):
+    # Only track file mutation tools
+    if tool_name not in ("Write", "Edit", "MultiEdit"):
         sys.exit(0)
 
     file_path = tool_input.get("file_path", "")

@@ -28,7 +28,7 @@ def run_hook(hook_name, stdin_data):
 
 
 class TestPretoolGuard:
-    """PreToolUse guard: blocks dangerous Bash, Write/Edit to protected paths."""
+    """PreToolUse guard: blocks dangerous Bash and protected path mutations."""
 
     # --- Bash deny patterns ---
 
@@ -165,6 +165,14 @@ class TestPretoolGuard:
         })
         assert code == 2
 
+    def test_multiedit_protected_path(self):
+        code, stderr = run_hook("pretool_guard.py", {
+            "tool_name": "MultiEdit",
+            "tool_input": {"file_path": ".github/workflows/ci.yml"}
+        })
+        assert code == 2
+        assert "protected" in stderr
+
     # --- Write/Edit normal paths ---
 
     def test_write_src_file(self):
@@ -274,6 +282,20 @@ class TestFixScopeGuard:
             finally:
                 os.environ.pop("CLAUDE_PROJECT_DIR", None)
 
+    def test_multiedit_counts_as_file_change(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.environ["CLAUDE_PROJECT_DIR"] = tmpdir
+            try:
+                code, stderr = run_hook("fix_scope_guard.py", {
+                    "tool_name": "MultiEdit",
+                    "tool_input": {"file_path": "src/app.ts"},
+                    "session_id": "test-multiedit",
+                })
+                assert code == 0
+                assert "ALERT" not in stderr
+            finally:
+                os.environ.pop("CLAUDE_PROJECT_DIR", None)
+
 
 class TestPosttoolLog:
     """PostToolUse audit logger."""
@@ -312,6 +334,31 @@ class TestPosttoolLog:
                     entry = json.loads(f.readline())
                     assert entry["tool"] == "Bash"
                     assert entry["command"] == "npm test"
+            finally:
+                os.environ.pop("CLAUDE_PROJECT_DIR", None)
+
+    def test_multiple_entries_append(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.environ["CLAUDE_PROJECT_DIR"] = tmpdir
+            try:
+                run_hook("posttool_log.py", {
+                    "tool_name": "Write",
+                    "tool_input": {"file_path": "src/one.ts"},
+                    "session_id": "test-append",
+                })
+                run_hook("posttool_log.py", {
+                    "tool_name": "Bash",
+                    "tool_input": {"command": "npm test"},
+                    "session_id": "test-append",
+                })
+
+                audit_log = os.path.join(tmpdir, ".harness", "audit.log")
+                with open(audit_log, encoding="utf-8") as f:
+                    entries = [json.loads(line) for line in f if line.strip()]
+
+                assert len(entries) == 2
+                assert entries[0]["tool"] == "Write"
+                assert entries[1]["tool"] == "Bash"
             finally:
                 os.environ.pop("CLAUDE_PROJECT_DIR", None)
 

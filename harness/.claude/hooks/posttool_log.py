@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 PostToolUse audit logger for Claude Code.
-Logs Write/Edit/Bash tool usage to .harness/audit.log with atomic append.
+Logs Write/Edit/Bash tool usage to .harness/audit.log.
 
 Input (stdin): JSON with tool_name, tool_input, session_id
 Output: None (silent on success)
@@ -10,7 +10,6 @@ Output: None (silent on success)
 import json
 import os
 import sys
-import time
 from datetime import datetime, timezone
 
 PROJECT_DIR = os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd())
@@ -45,13 +44,11 @@ def log_entry(tool_name, tool_input, session_id):
     elif tool_name == "Read":
         entry["file"] = tool_input.get("file_path", "")
 
-    # Atomic append: write to temp then rename
     line = json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + "\n"
-    tmp_path = AUDIT_LOG + f".tmp.{pid}"
     try:
-        with open(tmp_path, "a") as f:
+        # Open the target log in append mode so prior entries are preserved.
+        with open(AUDIT_LOG, "a", encoding="utf-8") as f:
             f.write(line)
-        os.rename(tmp_path, AUDIT_LOG)
     except OSError as e:
         # Log failure to stderr but don't break the hook chain
         print(f"[posttool_log] Write failed: {e}", file=sys.stderr)

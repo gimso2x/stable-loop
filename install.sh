@@ -23,6 +23,27 @@ fi
 
 echo "Installing stable-loop harness into: $TARGET_DIR"
 
+require_file() {
+  local path="$1"
+  if [ ! -f "$path" ]; then
+    echo "ERROR: Missing required file: $path"
+    exit 1
+  fi
+}
+
+check_python_version() {
+  python3 - <<'PY'
+import sys
+
+if sys.version_info < (3, 11):
+    raise SystemExit(1)
+PY
+}
+
+require_file "$HARNESS_DIR/AGENTS.md"
+require_file "$HARNESS_DIR/.claude/CLAUDE.md"
+require_file "$HARNESS_DIR/.claude/settings.json"
+
 # 1. Create directory structure
 mkdir -p "$TARGET_DIR/.claude/hooks"
 mkdir -p "$TARGET_DIR/.claude/commands"
@@ -32,6 +53,7 @@ mkdir -p "$TARGET_DIR/.harness"
 
 # 2. Copy core files
 cp "$HARNESS_DIR/AGENTS.md" "$TARGET_DIR/AGENTS.md"
+cp "$HARNESS_DIR/.claude/CLAUDE.md" "$TARGET_DIR/.claude/CLAUDE.md"
 cp "$HARNESS_DIR/.claude/settings.json" "$TARGET_DIR/.claude/settings.json"
 
 # 3. Copy hooks
@@ -57,10 +79,24 @@ done
 
 # 6. Verify Python3 available
 if ! command -v python3 &>/dev/null; then
-  echo "WARNING: python3 not found. Hooks require Python 3.11+."
+  echo "ERROR: python3 not found. Hooks require Python 3.11+."
+  exit 1
 fi
 
-# 7. Verify hooks work
+if ! check_python_version; then
+  echo "ERROR: python3 3.11+ is required for hooks."
+  exit 1
+fi
+
+# 7. Verify core files exist in the target project
+for required in \
+  "$TARGET_DIR/AGENTS.md" \
+  "$TARGET_DIR/.claude/CLAUDE.md" \
+  "$TARGET_DIR/.claude/settings.json"; do
+  require_file "$required"
+done
+
+# 8. Verify hooks work
 echo ""
 echo "Verifying hooks..."
 ERRORS=0
@@ -87,6 +123,6 @@ if [ $ERRORS -eq 0 ]; then
   echo ""
   echo "Start with: /init"
 else
-  echo "⚠️  $ERRORS hook(s) failed verification. Check Python 3.11+ is installed."
+  echo "⚠️  $ERRORS hook(s) failed verification."
   exit 1
 fi
