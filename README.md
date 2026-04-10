@@ -1,6 +1,6 @@
 # Stable Loop Harness
 
-Plan → Work → Review → Verify 파이프라인으로 Claude Code의 자율 코딩을 가드레일 있는 구조로 제한하는 하네스.
+A guarded autonomous coding harness that enforces a Plan → Work → Review → Verify loop for Claude Code.
 
 ## 철학
 
